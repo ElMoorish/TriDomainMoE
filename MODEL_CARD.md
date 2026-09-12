@@ -89,5 +89,29 @@ print(f"Expert Allocation -> Tech: {weights[0]*100:.1f}% | Macro: {weights[1]*10
 - **Intended Use**: Algorithmic quantitative research, signal generation, and hedge fund portfolio risk modeling.
 - **Limitations**: Trained on institutional broker floating spreads ($\approx \$65$ on BTC). Execution models must account for broker slippage, weekend swap fees, and liquidity conditions.
 
+## Links & Ecosystem
+
+- **GitHub Repository**: [https://github.com/ElMoorish/TriDomainMoE](https://github.com/ElMoorish/TriDomainMoE)
+- **Official Web Portal**: [https://primeclub-quant.vercel.app/](https://primeclub-quant.vercel.app/)
+- **Hugging Face Hub**: [https://huggingface.co/ElMoorish/tri-domain-moe](https://huggingface.co/ElMoorish/tri-domain-moe)
+
+## 💖 Support & Research Grants (Donations)
+
+Developing and live-forward testing institutional algorithmic intelligence requires 24/7 GPU compute, high-frequency tick data streams, and execution infrastructure for **TriDomainMoE** and **FinRL-X-MT5**.
+
+If this research provides value to your operations, cryptocurrency grants directly accelerate continuous live testing and open-source model releases:
+
+| Detail | Specification |
+| :--- | :--- |
+| **Asset** | **USDT (Tether USD)** |
+| **Network** | **TRON (TRC20)** |
+| **Address** | `TC8TFkemSFGEeBPF5ZQKbmjK97FVEGwrwc` |
+
+```text
+TRC20 USDT Address:
+TC8TFkemSFGEeBPF5ZQKbmjK97FVEGwrwc
+```
+
 ## License
 Apache License 2.0.
+

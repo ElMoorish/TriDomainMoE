@@ -2,17 +2,19 @@
 
 # 🧠 TriDomainMoE: Institutional Multi-Domain Mixture of Experts
 
+[![Web Portal](https://img.shields.io/badge/Web%20Portal-PrimeClub%20Quant-6366F1?style=for-the-badge&logo=vercel)](https://primeclub-quant.vercel.app/)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-ElMoorish%2Ftri--domain--moe-FFD21E?style=for-the-badge)](https://huggingface.co/ElMoorish/tri-domain-moe)
+[![GitHub](https://img.shields.io/badge/GitHub-ElMoorish%2FTriDomainMoE-181717?style=for-the-badge&logo=github)](https://github.com/ElMoorish/TriDomainMoE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch 2.0](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![MetaTrader 5](https://img.shields.io/badge/MetaTrader-5-0080FF?style=for-the-badge)](https://www.mql5.com/)
 [![License Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge)](LICENSE)
-[![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-Models%20Available-FFD21E?style=for-the-badge)](https://huggingface.co/)
 [![DSR 1.0000](https://img.shields.io/badge/Deflated%20Sharpe-1.0000%20(p%20<%200.0001)-00DC82?style=for-the-badge)]()
 [![Max Drawdown < 0.38%](https://img.shields.io/badge/Max%20Drawdown-0.375%25-00DC82?style=for-the-badge)]()
 
 **A production-grade, multi-scale Mixture of Experts (MoE) trading framework with Continuous Softmax Correlation-Aware Weighting (CAW), Volatility-Adaptive Breakeven Ratchet, and Continual ReCAP Adaptation with guaranteed zero catastrophic forgetting.**
 
-[Key Features](#-key-features) • [System Architecture](#-system-architecture) • [Verified Benchmark](#-verified-1-year-benchmark) • [Quickstart](#-quickstart-guide) • [Pretrained Models](#-hugging-face-model-hub) • [Documentation](ARCHITECTURE.md)
+[Official Portal](https://primeclub-quant.vercel.app/) • [Key Features](#-key-features) • [System Architecture](#-system-architecture) • [Verified Benchmark](#-verified-1-year-benchmark) • [Quickstart](#-quickstart-guide) • [Pretrained Models](#-hugging-face-model-hub) • [Support & Grants](#-support--research-grants-donations) • [Documentation](ARCHITECTURE.md)
 
 </div>
 
@@ -193,19 +195,52 @@ TriDomainMoE implements the **Regime-Aware Continual Adaptive Portfolio (ReCAP)*
 
 ## 🤗 Hugging Face Model Hub
 
-Pretrained model checkpoints, encoders, and discrete codebooks are published on the Hugging Face Hub:
+Pretrained model checkpoints, encoders, and discrete codebooks are published on the Hugging Face Hub at [**ElMoorish/tri-domain-moe**](https://huggingface.co/ElMoorish/tri-domain-moe):
 
 | Checkpoint Name | Description | Size | Hub Path |
 | :--- | :--- | :---: | :--- |
-| `btcusd_tri_domain_v2.pt` | Enhanced Live v2 Production Model | 210 KB | `tri-domain-moe/btcusd-tri-domain-v2` |
-| `btcusd_advanced_v1.pt` | MBM + VQ-VAE + Microstructure v3 Model | 1.5 MB | `tri-domain-moe/btcusd-advanced-v1` |
-| `mbm_encoder_v1.pt` | Masked Bar Modeling 4-Layer Transformer | 3.3 MB | `tri-domain-moe/mbm-encoder-v1` |
-| `vq_tokenizer_v1.pt` | Discrete Market State Codebook (K=128) | 1.1 MB | `tri-domain-moe/vq-tokenizer-v1` |
+| `btcusd_tri_domain_v2.pt` | Enhanced Live v2 Production Model | 210 KB | [`ElMoorish/tri-domain-moe/weights/btcusd_tri_domain_v2.pt`](https://huggingface.co/ElMoorish/tri-domain-moe) |
+| `btcusd_advanced_v1.pt` | MBM + VQ-VAE + Microstructure v3 Model | 1.5 MB | [`ElMoorish/tri-domain-moe/weights/btcusd_advanced_v1.pt`](https://huggingface.co/ElMoorish/tri-domain-moe) |
+| `mbm_encoder_v1.pt` | Masked Bar Modeling 4-Layer Transformer | 3.3 MB | [`ElMoorish/tri-domain-moe/weights/mbm_encoder_v1.pt`](https://huggingface.co/ElMoorish/tri-domain-moe) |
+| `vq_tokenizer_v1.pt` | Discrete Market State Codebook (K=128) | 1.1 MB | [`ElMoorish/tri-domain-moe/weights/vq_tokenizer_v1.pt`](https://huggingface.co/ElMoorish/tri-domain-moe) |
+| `recap_policies.pt` | Modular Continual ReCAP Policy Library | 204 KB | [`ElMoorish/tri-domain-moe/weights/recap_library/recap_policies.pt`](https://huggingface.co/ElMoorish/tri-domain-moe) |
 
-To push checkpoints directly to your Hugging Face account:
+To upload additional checkpoints directly to your Hugging Face account:
 ```bash
 python scripts/upload_to_huggingface.py --repo-id ElMoorish/tri-domain-moe
 ```
+
+---
+
+## 🌐 Ecosystem & Live Portal
+
+TriDomainMoE is part of the **PrimeClub Quant** algorithmic ecosystem. Visit the official web portal for real-time portfolio dashboards, research articles, and multi-agent execution telemetry:
+
+🔗 **Official Web Portal**: [**https://primeclub-quant.vercel.app/**](https://primeclub-quant.vercel.app/)
+
+---
+
+## 💖 Support & Research Grants (Donations)
+
+Developing, pretraining, and live-forward testing institutional algorithmic intelligence requires continuous 24/7 high-performance GPU compute (NVIDIA RTX 4060 / cloud H100 clusters), low-latency MT5 broker tick execution data feeds, and institutional news streaming infrastructure.
+
+If **TriDomainMoE** or **FinRL-X-MT5** provides value to your research or trading operations, supporting the project directly accelerates our live forward validation, multi-asset extensions (NAS100, XAUUSD, ETHUSD), and open-source model releases.
+
+### 🪙 Cryptocurrency Research Donations
+
+| Detail | Specification |
+| :--- | :--- |
+| **Asset** | **USDT (Tether USD)** |
+| **Network** | **TRON (TRC20)** |
+| **Deposit Address** | `TC8TFkemSFGEeBPF5ZQKbmjK97FVEGwrwc` |
+
+```text
+TRC20 USDT Address:
+TC8TFkemSFGEeBPF5ZQKbmjK97FVEGwrwc
+```
+
+> [!IMPORTANT]
+> Please ensure you transfer **USDT** strictly over the **TRON (TRC20)** network. Transfers sent over other networks (ERC20, BSC, Solana, etc.) cannot be recovered. All grants go directly toward server compute, real tick data procurement, and live forward execution infrastructure.
 
 ---
 
@@ -224,3 +259,4 @@ Distributed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) for detai
 
 > [!CAUTION]
 > **Quantitative Research Disclosure**: This software is provided for scientific, academic, and algorithmic trading research purposes. Algorithmic trading in cryptocurrencies, indices, and derivatives carries substantial financial risk. Past statistical backtest performance is not an absolute guarantee of future live execution returns. Always practice strict capital preservation.
+
