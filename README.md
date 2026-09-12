@@ -3,6 +3,7 @@
 # 🧠 TriDomainMoE: Institutional Multi-Domain Mixture of Experts
 
 [![Web Portal](https://img.shields.io/badge/Web%20Portal-PrimeClub%20Quant-6366F1?style=for-the-badge&logo=vercel)](https://primeclub-quant.vercel.app/)
+[![Wiki Docs](https://img.shields.io/badge/Wiki-Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white)](https://github.com/ElMoorish/TriDomainMoE/wiki)
 [![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-ElMoorish%2Ftri--domain--moe-FFD21E?style=for-the-badge)](https://huggingface.co/ElMoorish/tri-domain-moe)
 [![GitHub](https://img.shields.io/badge/GitHub-ElMoorish%2FTriDomainMoE-181717?style=for-the-badge&logo=github)](https://github.com/ElMoorish/TriDomainMoE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -14,7 +15,7 @@
 
 **A production-grade, multi-scale Mixture of Experts (MoE) trading framework with Continuous Softmax Correlation-Aware Weighting (CAW), Volatility-Adaptive Breakeven Ratchet, and Continual ReCAP Adaptation with guaranteed zero catastrophic forgetting.**
 
-[Official Portal](https://primeclub-quant.vercel.app/) • [Key Features](#-key-features) • [System Architecture](#-system-architecture) • [Verified Benchmark](#-verified-1-year-benchmark) • [Quickstart](#-quickstart-guide) • [Pretrained Models](#-hugging-face-model-hub) • [Support & Grants](#-support--research-grants-donations) • [Documentation](ARCHITECTURE.md)
+[Official Portal](https://primeclub-quant.vercel.app/) • [Wiki Docs](https://github.com/ElMoorish/TriDomainMoE/wiki) • [Key Features](#-key-features) • [System Architecture](#-system-architecture) • [Verified Benchmark](#-verified-1-year-benchmark) • [Quickstart](#-quickstart-guide) • [Pretrained Models](#-hugging-face-model-hub) • [Support & Grants](#-support--research-grants-donations) • [Documentation](ARCHITECTURE.md)
 
 </div>
 
