@@ -1,0 +1,45 @@
+# Global System Configuration for Self-Improving Financial MoE
+
+system:
+  project_name: "Self-Improving Financial MoE"
+  version: "1.0.0"
+  python_executable: "python"
+  device: "cuda"  # Falls back to cpu automatically if cuda unavailable
+
+data:
+  cache_dir: "data/cache"
+  ticks_dir: "data/cache/ticks"
+  bars_dir: "data/cache/bars"
+  features_dir: "data/cache/features"
+  default_provider: "mt5"
+  storage_format: "parquet"
+
+microstructure:
+  volume_bar_threshold: 1000  # Default cumulative volume per bar
+  dollar_bar_threshold: 5000000 # Default dollar value per bar
+  ofi_levels: 5  # Best N book depth levels for Order Flow Imbalance
+
+sampling:
+  cusum_threshold_multiplier: 1.5  # Multiplier h for h * sigma_t
+  volatility_lookback: 100  # Trailing window for sigma_t estimation
+
+stationarity:
+  adf_significance_level: 0.05
+  fracdiff_d_min: 0.0
+  fracdiff_d_max: 1.0
+  fracdiff_d_step: 0.05
+  fracdiff_threshold: 1e-4  # Binomial weight truncation
+
+labeling:
+  triple_barrier:
+    pt_multiplier: 2.0  # k for profit taking: P0 * (1 + k * sigma)
+    sl_multiplier: 1.5  # k for stop loss: P0 * (1 - k * sigma)
+    max_holding_bars: 20  # Delta t vertical barrier
+  meta_labeling:
+    calibration_sigma: 0.25  # sigma_cal for calibrated sigmoid sizing
+
+regime_sentiment:
+  decay_halflife_hours: 12.0
+  update_interval_minutes: 30
+  rss_sources:
+    - "https://finance.yahoo.com/news/rssindex"

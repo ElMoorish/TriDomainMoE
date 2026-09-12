@@ -1,0 +1,72 @@
+# =============================================================================
+# TriDomainMoE — Git Ignore Specification
+# =============================================================================
+
+# Secrets, Passwords & Credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json
+auth.json
+
+# Large Binary Caches & Raw Market Data
+data/cache/ticks/
+data/cache/bars/*.parquet
+data/cache/features/
+data/raw/
+*.tar.gz
+*.zip
+
+# Local Logs & Execution Tasks
+logs/
+*.log
+scratch/
+.system_generated/
+
+# Python Bytecode & Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# IDE, Editor & OS Metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+.gemini/

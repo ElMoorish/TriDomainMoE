@@ -1,0 +1,83 @@
+# Symbol Mapping and Microstructure Specifications
+
+symbols:
+  BTCUSD.x:
+    asset_class: "crypto"
+    base_asset: "BTC"
+    display_name: "Bitcoin / US Dollar"
+    point_size: 0.01
+    volume_bar_threshold: 50.0
+    dollar_bar_threshold: 5000000.0
+    cusum_h_multiplier: 1.8
+    yahoo_ticker: "BTC-USD"
+    trade_24_7: true
+
+  NAS100.x:
+    asset_class: "equity_index"
+    base_asset: "NDX"
+    display_name: "Nasdaq 100"
+    point_size: 0.01
+    volume_bar_threshold: 500
+    dollar_bar_threshold: 10000000
+    cusum_h_multiplier: 1.5
+    yahoo_ticker: "^NDX"
+
+  SPX500.x:
+    asset_class: "equity_index"
+    base_asset: "SPX"
+    display_name: "S&P 500"
+    point_size: 0.01
+    volume_bar_threshold: 1000
+    dollar_bar_threshold: 25000000
+    cusum_h_multiplier: 1.5
+    yahoo_ticker: "^GSPC"
+
+  US30.x:
+    asset_class: "equity_index"
+    base_asset: "DJI"
+    display_name: "Dow Jones 30"
+    point_size: 0.1
+    volume_bar_threshold: 500
+    dollar_bar_threshold: 15000000
+    cusum_h_multiplier: 1.5
+    yahoo_ticker: "^DJI"
+
+  XAUUSD.x:
+    asset_class: "commodity_metal"
+    base_asset: "Gold"
+    display_name: "Spot Gold / USD"
+    point_size: 0.01
+    volume_bar_threshold: 300
+    dollar_bar_threshold: 5000000
+    cusum_h_multiplier: 1.8
+    yahoo_ticker: "GC=F"
+
+  WTI.x:
+    asset_class: "commodity_energy"
+    base_asset: "CrudeOil"
+    display_name: "WTI Crude Oil"
+    point_size: 0.01
+    volume_bar_threshold: 300
+    dollar_bar_threshold: 3000000
+    cusum_h_multiplier: 2.0
+    yahoo_ticker: "CL=F"
+
+  BRENT.x:
+    asset_class: "commodity_energy"
+    base_asset: "BrentCrude"
+    display_name: "Brent Crude Oil"
+    point_size: 0.01
+    volume_bar_threshold: 300
+    dollar_bar_threshold: 3000000
+    cusum_h_multiplier: 2.0
+    yahoo_ticker: "BZ=F"
+
+  EURUSD.x:
+    asset_class: "fx_macro"
+    base_asset: "EURUSD"
+    display_name: "Euro / US Dollar"
+    point_size: 0.00001
+    volume_bar_threshold: 1000
+    dollar_bar_threshold: 5000000
+    cusum_h_multiplier: 1.5
+    yahoo_ticker: "EURUSD=X"

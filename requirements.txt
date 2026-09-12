@@ -1,0 +1,18 @@
+# Core Machine Learning & Scientific Computing
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+PyWavelets>=1.4.0
+pyarrow>=14.0.0
+pyyaml>=6.0.0
+requests>=2.28.0
+
+# Hugging Face Model Hub Integration
+huggingface_hub>=0.20.0
+
+# Testing & Validation
+pytest>=7.0.0
+
+# Broker Execution Bridge (Windows Only)
+MetaTrader5>=5.0.45; sys_platform == 'win32'
