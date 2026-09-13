@@ -143,6 +143,13 @@ class TradeNotifier:
             except Exception as e:
                 logger.debug("Error in notifier dispatch loop: %s", e)
 
+    def flush(self, timeout: float = 10.0):
+        """Wait until all queued notifications have been dispatched."""
+        t0 = time.time()
+        while not self._queue.empty() and (time.time() - t0 < timeout):
+            time.sleep(0.1)
+        time.sleep(0.5)
+
     def post_telegram(self, text: str):
         """Enqueue an HTML formatted message to Telegram."""
         if not self.has_telegram:

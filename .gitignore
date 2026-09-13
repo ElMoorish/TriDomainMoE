@@ -70,3 +70,7 @@ coverage.xml
 Thumbs.db
 desktop.ini
 .gemini/
+
+# Internal Business & Marketing Strategy (Confidential)
+docs/marketing/
+reports/
