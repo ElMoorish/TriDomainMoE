@@ -34,6 +34,7 @@ from src.surveillance.entropy_guard import GatingEntropyGuard
 from src.surveillance.risk_controls import RiskControls, CircuitBreakerState
 from src.surveillance.mrdd import MultiResolutionDriftDetector
 from src.execution.mt5_bridge import MT5ExecutionBridge
+from src.execution.notifier import TradeNotifier, TriDomainRecapGenerator
 from src.utils.logger import setup_logger
 
 logger = setup_logger("LiveMT5Trader")
@@ -114,6 +115,13 @@ def main():
         args.risk_pct * 100.0,
         enh_banner,
     )
+
+    notifier = TradeNotifier()
+    recap_gen = TriDomainRecapGenerator(notifier=notifier)
+    last_daily_recap_date = ""
+    last_weekly_recap_week = ""
+    is_crypto = any(c in args.symbol.upper() for c in ("BTC", "ETH", "CRYPTO"))
+    last_known_live_ticket = None
 
     step = 0
     recent_returns = []
@@ -273,6 +281,17 @@ def main():
                         )
                         if ratchet_events:
                             logger.info("  [LIVE RATCHET EVENT] -> %s", ratchet_events)
+                            for evt in ratchet_events:
+                                if evt.get("status") == "ratcheted":
+                                    notifier.notify_breakeven_ratchet(
+                                        ticket=evt.get("ticket", 0),
+                                        symbol=args.symbol,
+                                        direction=evt.get("direction", "SELL"),
+                                        entry_price=evt.get("entry", 0.0),
+                                        old_sl=evt.get("old_sl", 0.0),
+                                        new_sl=evt.get("new_sl", 0.0),
+                                        locked_profit=evt.get("locked_profit", 0.0),
+                                    )
 
             # Check if paper position exists
             if args.paper and paper_position is not None:
@@ -463,6 +482,62 @@ def main():
                     tp_dist=tp_dist,
                 )
                 logger.info("Order Dispatch Result: %s", dispatch_res)
+                if dispatch_res.get("status") == "success":
+                    last_known_live_ticket = dispatch_res.get("order_id")
+                    notifier.notify_signal_dispatched(
+                        symbol=args.symbol,
+                        direction=dispatch_res["direction"],
+                        lots=dispatch_res["lot_size"],
+                        price=dispatch_res["entry"],
+                        sl=dispatch_res["sl"],
+                        tp=dispatch_res["tp"],
+                        risk_pct=args.risk_pct * 100.0 * max(0.1, min(conviction_size, 2.0)),
+                        conviction=conviction_size,
+                        weights=weights.tolist() if hasattr(weights, "tolist") else list(weights),
+                        entropy=entropy,
+                        h1_trend=h1_trend,
+                        magic=execution_bridge.magic_number,
+                    )
+
+            # Automated Daily & Weekly Performance Recap Dispatches
+            now_utc = datetime.now(timezone.utc)
+            today_str = now_utc.strftime("%Y-%m-%d")
+            week_str = now_utc.strftime("%Y_W%W")
+
+            # Daily Recap at 23:55 UTC (Daily across all active trading sessions)
+            if now_utc.hour == 23 and now_utc.minute >= 50 and today_str != last_daily_recap_date:
+                try:
+                    logger.info("📊 Generating and dispatching automated End-of-Day Performance Recap for %s...", args.symbol)
+                    recap_gen.generate_daily_recap(
+                        symbol=args.symbol,
+                        magic=execution_bridge.magic_number,
+                        dispatch=True,
+                        title_suffix="24/7 Crypto Session" if is_crypto else "Equity Session",
+                    )
+                    last_daily_recap_date = today_str
+                except Exception as e:
+                    logger.warning("Automated daily recap failed: %s", e)
+
+            # Weekly Recap:
+            # - Sunday Midnight 23:55 UTC for BTCUSD (7-Day 24/7 Crypto Cycle)
+            # - Friday 21:55 UTC for NAS100 (5-Day Equity Market Close)
+            is_weekly_trigger = (
+                (is_crypto and now_utc.weekday() == 6 and now_utc.hour == 23 and now_utc.minute >= 50)
+                or ((not is_crypto) and now_utc.weekday() == 4 and now_utc.hour == 21 and now_utc.minute >= 50)
+            )
+            if is_weekly_trigger and week_str != last_weekly_recap_week:
+                try:
+                    sched_label = "Sunday Midnight 7-Day Crypto Cycle" if is_crypto else "Friday Equity Market Close"
+                    logger.info("📊 Generating and dispatching automated Weekly Performance Recap (%s)...", sched_label)
+                    recap_gen.generate_weekly_recap(
+                        symbol=args.symbol,
+                        magic=execution_bridge.magic_number,
+                        dispatch=True,
+                        title_suffix=sched_label,
+                    )
+                    last_weekly_recap_week = week_str
+                except Exception as e:
+                    logger.warning("Automated weekly recap failed: %s", e)
 
             if args.max_steps > 0 and step >= args.max_steps:
                 logger.info("Reached target step limit (%d). Exiting cleanly.", args.max_steps)

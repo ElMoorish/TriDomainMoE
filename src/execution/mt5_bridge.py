@@ -164,7 +164,15 @@ class MT5ExecutionBridge:
                         res = mt5.order_send(req)
                         if res.retcode == mt5.TRADE_RETCODE_DONE:
                             logger.info("[BREAKEVEN RATCHET ACTIVATED] BUY #%d SL ratcheted from %.2f to %.2f (+%.2f locked profit)", ticket, current_sl, new_sl, new_sl - entry_p)
-                            results.append({"ticket": ticket, "status": "ratcheted", "new_sl": new_sl})
+                            results.append({
+                                "ticket": ticket,
+                                "status": "ratcheted",
+                                "new_sl": new_sl,
+                                "old_sl": current_sl,
+                                "direction": "BUY",
+                                "entry": entry_p,
+                                "locked_profit": new_sl - entry_p,
+                            })
                         else:
                             logger.warning("Breakeven ratchet failed on BUY #%d: %s (code %d)", ticket, res.comment, res.retcode)
             else:
@@ -183,7 +191,15 @@ class MT5ExecutionBridge:
                         res = mt5.order_send(req)
                         if res.retcode == mt5.TRADE_RETCODE_DONE:
                             logger.info("[BREAKEVEN RATCHET ACTIVATED] SELL #%d SL ratcheted from %.2f to %.2f (+%.2f locked profit)", ticket, current_sl, new_sl, entry_p - new_sl)
-                            results.append({"ticket": ticket, "status": "ratcheted", "new_sl": new_sl})
+                            results.append({
+                                "ticket": ticket,
+                                "status": "ratcheted",
+                                "new_sl": new_sl,
+                                "old_sl": current_sl,
+                                "direction": "SELL",
+                                "entry": entry_p,
+                                "locked_profit": entry_p - new_sl,
+                            })
                         else:
                             logger.warning("Breakeven ratchet failed on SELL #%d: %s (code %d)", ticket, res.comment, res.retcode)
 
