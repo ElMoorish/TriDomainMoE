@@ -130,6 +130,10 @@ TriDomainMoE was independently benchmarked and audited using the **WalkForward Q
 | **Win Rate (%)** | 46.31% | **57.75%** | 57.39% |
 | **Profit Factor** | 1.24 | **1.70** | 1.16 |
 | **Net Profit ($)** | +$1,421.40 | +$1,581.16 | **+$3,697.55** |
+| **Historical Max Drawdown (%)** | 2.31% | **1.41%** (Ultra-Low) | 6.53% |
+| **Monte Carlo P99 Max DD** | 2.31% | **1.41%** | 10.89% |
+| **FTMO Max Daily Loss** | $780.12 (0.78%) | **$394.88 (0.39%)** | $2,230.59 (2.23%) [Limit: $5k] |
+| **FTMO Max Total DD** | $2,305.47 (2.31%) | **$1,407.19 (1.41%)** | $6,532.32 (6.53%) [Limit: $10k] |
 | **Robert Pardo WFE** | **85.8%** | **79.5%** | **143.2%** |
 | **WFE Classification** | **High Consistency** | **High Consistency** | **High Consistency** |
 | **Deflated Sharpe (DSR)** | 0.987 | **0.997** | 0.939 |
