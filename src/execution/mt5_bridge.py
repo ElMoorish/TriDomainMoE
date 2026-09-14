@@ -33,11 +33,15 @@ class MT5ExecutionBridge:
         magic_number: int = 777123,
         slippage_points: int = 10,
         risk_per_trade_pct: float = 0.0020,  # Scaled to 0.20% per trade ($20 risk on $10k equity)
+        stealth_mode: bool = True,           # Zero footprint: leaves blank comment matching manual orders
+        order_comment: str = "",
     ):
         self.risk_controls = risk_controls or RiskControls()
         self.magic_number = magic_number
         self.slippage = slippage_points
         self.risk_pct = risk_per_trade_pct
+        self.stealth_mode = stealth_mode
+        self.order_comment = order_comment
 
     @staticmethod
     def get_supported_filling_mode(info: Any) -> int:
@@ -271,7 +275,7 @@ class MT5ExecutionBridge:
             "tp": round(tp_price, info.digits),
             "deviation": self.slippage,
             "magic": self.magic_number,
-            "comment": f"TriDomainMoE-{cb_state.value}",
+            "comment": ("" if self.stealth_mode else (self.order_comment or f"TriDomainMoE-{cb_state.value}")),
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode,
         }

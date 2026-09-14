@@ -40,11 +40,13 @@ logger = setup_logger("TradeNotifier")
 def load_notification_credentials() -> Dict[str, str]:
     """
     Resolves notification credentials from local environment, .env file,
-    or neighboring FinRL-X-MT5 configuration.
+    growth_desk/.env, and neighboring FinRL-X-MT5 configuration.
     """
     creds = {
         "TELEGRAM_BOT_TOKEN": os.environ.get("TELEGRAM_BOT_TOKEN", "").strip(),
         "TELEGRAM_CHAT_ID": os.environ.get("TELEGRAM_CHAT_ID", "").strip(),
+        "TELEGRAM_CHANNEL_ID": os.environ.get("TELEGRAM_CHANNEL_ID", "").strip(),
+        "TELEGRAM_ADMIN_CHAT_ID": os.environ.get("TELEGRAM_ADMIN_CHAT_ID", os.environ.get("TELEGRAM_USER_ID", "")).strip(),
         "DISCORD_WEBHOOK_URL": os.environ.get("DISCORD_WEBHOOK_URL", "").strip(),
         "ENABLE_NOTIFICATIONS": os.environ.get("ENABLE_NOTIFICATIONS", "true").strip().lower() in ("true", "1", "yes"),
     }
@@ -59,25 +61,42 @@ def load_notification_credentials() -> Dict[str, str]:
                 continue
             k, v = line.split("=", 1)
             k, v = k.strip(), v.strip().strip("'\"")
-            # Direct match
-            if k in creds and not creds[k]:
-                creds[k] = v
-            # FinRL-X nested key format: NOTIFICATIONS__TELEGRAM_BOT_TOKEN
-            elif k == "NOTIFICATIONS__TELEGRAM_BOT_TOKEN" and not creds["TELEGRAM_BOT_TOKEN"]:
-                creds["TELEGRAM_BOT_TOKEN"] = v
-            elif k == "NOTIFICATIONS__TELEGRAM_CHAT_ID" and not creds["TELEGRAM_CHAT_ID"]:
-                creds["TELEGRAM_CHAT_ID"] = v
-            elif k == "NOTIFICATIONS__DISCORD_WEBHOOK_URL" and not creds["DISCORD_WEBHOOK_URL"]:
-                creds["DISCORD_WEBHOOK_URL"] = v
+            if not v:
+                continue
 
-    # 1. Search in current repository root
+            if k in ("TELEGRAM_BOT_TOKEN", "NOTIFICATIONS__TELEGRAM_BOT_TOKEN"):
+                if not creds["TELEGRAM_BOT_TOKEN"]:
+                    creds["TELEGRAM_BOT_TOKEN"] = v
+            elif k in ("TELEGRAM_CHAT_ID", "NOTIFICATIONS__TELEGRAM_CHAT_ID"):
+                if v.startswith("-100"):
+                    creds["TELEGRAM_CHANNEL_ID"] = v
+                else:
+                    if not creds["TELEGRAM_ADMIN_CHAT_ID"]:
+                        creds["TELEGRAM_ADMIN_CHAT_ID"] = v
+                if not creds["TELEGRAM_CHAT_ID"]:
+                    creds["TELEGRAM_CHAT_ID"] = v
+            elif k in ("TELEGRAM_USER_ID", "TELEGRAM_ADMIN_CHAT_ID"):
+                creds["TELEGRAM_ADMIN_CHAT_ID"] = v
+            elif k in ("DISCORD_WEBHOOK_URL", "NOTIFICATIONS__DISCORD_WEBHOOK_URL"):
+                if not creds["DISCORD_WEBHOOK_URL"]:
+                    creds["DISCORD_WEBHOOK_URL"] = v
+
     repo_root = Path(__file__).resolve().parent.parent.parent
+    # 1. Search in current repository root
     parse_env_file(repo_root / ".env")
+    # 2. Search in growth_desk/.env
+    parse_env_file(repo_root / "growth_desk" / ".env")
+    # 3. Search in FinRL-X-MT5 for VIP channel credentials
+    finrl_env = repo_root.parent / "FinRL-X-MT5" / ".env"
+    parse_env_file(finrl_env)
 
-    # 2. Fallback to FinRL-X-MT5 if credentials are not yet populated
-    if not (creds["TELEGRAM_BOT_TOKEN"] and creds["TELEGRAM_CHAT_ID"]):
-        finrl_env = repo_root.parent / "FinRL-X-MT5" / ".env"
-        parse_env_file(finrl_env)
+    # Defaults
+    if not creds["TELEGRAM_ADMIN_CHAT_ID"]:
+        creds["TELEGRAM_ADMIN_CHAT_ID"] = "5914407722"
+    if not creds["TELEGRAM_CHANNEL_ID"]:
+        creds["TELEGRAM_CHANNEL_ID"] = "-1003825983797"
+    if not creds["TELEGRAM_CHAT_ID"]:
+        creds["TELEGRAM_CHAT_ID"] = creds["TELEGRAM_CHANNEL_ID"]
 
     return creds
 
@@ -91,7 +110,8 @@ class TradeNotifier:
     def __init__(self):
         self.creds = load_notification_credentials()
         self.tg_token = self.creds["TELEGRAM_BOT_TOKEN"]
-        self.tg_chat_id = self.creds["TELEGRAM_CHAT_ID"]
+        self.tg_chat_id = self.creds["TELEGRAM_CHANNEL_ID"] or self.creds["TELEGRAM_CHAT_ID"]
+        self.admin_chat_id = self.creds.get("TELEGRAM_ADMIN_CHAT_ID", "5914407722").strip()
         self.discord_url = self.creds["DISCORD_WEBHOOK_URL"]
         self.enabled = self.creds["ENABLE_NOTIFICATIONS"]
 
@@ -100,13 +120,14 @@ class TradeNotifier:
         self._worker_thread.start()
 
         if self.has_telegram:
-            logger.info("Telegram Notifier active (Chat ID: %s...)", self.tg_chat_id[:4] if len(self.tg_chat_id) >= 4 else "***")
+            logger.info("Telegram Notifier active (VIP Channel: %s | Admin DM: %s)",
+                        self.tg_chat_id, self.admin_chat_id)
         if self.has_discord:
             logger.info("Discord Webhook Notifier active.")
 
     @property
     def has_telegram(self) -> bool:
-        return bool(self.tg_token and self.tg_chat_id and self.enabled)
+        return bool(self.tg_token and (self.tg_chat_id or self.admin_chat_id) and self.enabled)
 
     @property
     def has_discord(self) -> bool:
@@ -150,21 +171,32 @@ class TradeNotifier:
             time.sleep(0.1)
         time.sleep(0.5)
 
-    def post_telegram(self, text: str):
+    def post_telegram(self, text: str, target_chat_id: Optional[str] = None, broadcast_admin: bool = True):
         """Enqueue an HTML formatted message to Telegram."""
         if not self.has_telegram:
             return
         tg_url = f"https://api.telegram.org/bot{self.tg_token}/sendMessage"
-        payload = {
-            "chat_id": self.tg_chat_id,
-            "text": text,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-        }
-        try:
-            self._queue.put_nowait({"channel": "telegram", "url": tg_url, "payload": payload})
-        except queue.Full:
-            logger.warning("Telegram notification queue full; dropping message.")
+
+        targets = []
+        if target_chat_id:
+            targets.append(target_chat_id)
+        else:
+            if self.tg_chat_id:
+                targets.append(self.tg_chat_id)
+            if broadcast_admin and self.admin_chat_id and (self.admin_chat_id != self.tg_chat_id):
+                targets.append(self.admin_chat_id)
+
+        for cid in targets:
+            payload = {
+                "chat_id": cid,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            }
+            try:
+                self._queue.put_nowait({"channel": "telegram", "url": tg_url, "payload": payload})
+            except queue.Full:
+                logger.warning("Telegram notification queue full; dropping message for chat %s.", cid)
 
     def post_discord(self, payload: Dict[str, Any]):
         """Enqueue a rich embed to Discord."""
@@ -289,6 +321,166 @@ class TradeNotifier:
             f"⏱️ <b>Holding Duration:</b> <code>{hold_time_mins:.1f} minutes</code>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🏛️ <i>Live capital returned to risk controller for reallocation.</i>"
+        )
+        self.post_telegram(tg_text)
+
+    def notify_vip_entry(
+        self,
+        symbol: str,
+        direction: str,
+        lots: float,
+        price: float,
+        sl: float,
+        tp: float,
+        ticket: Optional[int] = None,
+        risk_pct: Optional[float] = None,
+        strategy: str = "TriDomainMoE Institutional",
+    ):
+        """Dispatches an institutional VIP entry signal."""
+        is_buy = direction.upper() in ("BUY", "LONG")
+        dir_badge = "🟢 BUY / LONG" if is_buy else "🔴 SELL / SHORT"
+        sl_dist = abs(price - sl)
+        tp_dist = abs(tp - price)
+        rr = (tp_dist / sl_dist) if sl_dist > 0 else 0.0
+
+        ticket_str = f" | Ticket <code>#{ticket}</code>" if ticket else ""
+        risk_str = f"\n⚖️ <b>Risk:</b> <code>{risk_pct:.2f}% Equity</code>" if risk_pct else ""
+        clean_sym = symbol.replace(".x", "").replace("m", "")
+
+        tg_text = (
+            f"⚡ <b>VIP TRADING SIGNAL | NEW ENTRY</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>Asset:</b> <code>#{clean_sym}</code> ({symbol}){ticket_str}\n"
+            f"📊 <b>Order Action:</b> <b>{dir_badge}</b>\n"
+            f"📦 <b>Entry Price:</b> <code>{price:,.2f}</code>\n"
+            f"🛡️ <b>Stop-Loss (SL):</b> <code>{sl:,.2f}</code> (Risk: -{sl_dist:,.2f} pts)\n"
+            f"🎯 <b>Take-Profit (TP):</b> <code>{tp:,.2f}</code> (Reward: +{tp_dist:,.2f} pts | R:R = 1:{rr:.1f})\n"
+            f"📦 <b>Position Size:</b> <code>{lots:.2f} lots</code>{risk_str}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏛️ <i>Strategy: {strategy} • Execution: Stealth Zero-Footprint</i>"
+        )
+        self.post_telegram(tg_text)
+
+    def notify_vip_breakeven(
+        self,
+        ticket: int,
+        symbol: str,
+        direction: str,
+        entry_price: float,
+        old_sl: float,
+        new_sl: float,
+        locked_profit: float = 0.0,
+    ):
+        """Dispatches VIP Breakeven Ratchet / Protected SL notification."""
+        is_buy = direction.upper() in ("BUY", "LONG")
+        clean_sym = symbol.replace(".x", "").replace("m", "")
+        dir_str = "BUY" if is_buy else "SELL"
+        profit_str = f" (+${locked_profit:,.2f} locked)" if locked_profit > 0 else " (Risk Free)"
+
+        tg_text = (
+            f"🛡️ <b>VIP TRADE UPDATE | BREAKEVEN ACTIVATED</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>Asset:</b> <code>#{clean_sym}</code> ({dir_str}) | Ticket <code>#{ticket}</code>\n"
+            f"📍 <b>Entry Price:</b> <code>{entry_price:,.2f}</code>\n"
+            f"🔒 <b>Stop-Loss Moved:</b> <code>{old_sl:,.2f}</code> ➔ <b>{new_sl:,.2f}</b>\n"
+            f"💰 <b>Protection Status:</b> <b>RISK FREE TRADE</b>{profit_str}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"✅ <i>Zero downside trade: Stop-loss is now at breakeven. Enjoy the free ride!</i>"
+        )
+        self.post_telegram(tg_text)
+
+    def notify_vip_sl_hit(
+        self,
+        ticket: int,
+        symbol: str,
+        direction: str,
+        exit_price: float,
+        pnl: float,
+        hold_time_mins: float,
+        was_breakeven: bool = False,
+    ):
+        """Dispatches Stop-Loss hit or Breakeven scratch exit."""
+        clean_sym = symbol.replace(".x", "").replace("m", "")
+        pnl_sign = "+" if pnl >= 0 else ""
+        if was_breakeven:
+            title = "🛡️ <b>VIP TRADE UPDATE | BREAKEVEN EXIT</b>"
+            badge = "🟢 BREAKEVEN SCRATCH (ZERO LOSS)"
+            summary = "Trade closed safely at protective stop. Zero capital drawdown incurred."
+        else:
+            title = "🛑 <b>VIP TRADE UPDATE | STOP-LOSS HIT</b>"
+            badge = "🔴 STOP LOSS TRIGGERED"
+            summary = "Position closed at predefined stop level. Capital strictly protected."
+
+        tg_text = (
+            f"{title}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>Asset:</b> <code>#{clean_sym}</code> ({direction.upper()}) | Ticket <code>#{ticket}</code>\n"
+            f"📍 <b>Exit Price:</b> <code>{exit_price:,.2f}</code>\n"
+            f"📊 <b>Outcome:</b> <b>{badge}</b>\n"
+            f"💰 <b>Realized Net PnL:</b> <b>{pnl_sign}${pnl:,.2f}</b>\n"
+            f"⏱️ <b>Holding Duration:</b> <code>{hold_time_mins:.1f} minutes</code>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏛️ <i>{summary}</i>"
+        )
+        self.post_telegram(tg_text)
+
+    def notify_vip_tp_hit(
+        self,
+        ticket: int,
+        symbol: str,
+        direction: str,
+        exit_price: float,
+        pnl: float,
+        hold_time_mins: float,
+        target_pts: float = 0.0,
+    ):
+        """Dispatches Take-Profit target achieved."""
+        clean_sym = symbol.replace(".x", "").replace("m", "")
+        pts_str = f" (+{target_pts:,.2f} pts)" if target_pts > 0 else ""
+
+        tg_text = (
+            f"🎯 <b>VIP TRADE UPDATE | TAKE-PROFIT HIT 🚀</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>Asset:</b> <code>#{clean_sym}</code> ({direction.upper()}) | Ticket <code>#{ticket}</code>\n"
+            f"📍 <b>Exit Price:</b> <code>{exit_price:,.2f}</code>\n"
+            f"🏆 <b>Outcome:</b> <b>🟢 FULL TARGET ACHIEVED{pts_str}</b>\n"
+            f"💰 <b>Realized Net Profit:</b> <b>+${pnl:,.2f}</b>\n"
+            f"⏱️ <b>Holding Duration:</b> <code>{hold_time_mins:.1f} minutes</code>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🥂 <i>Institutional target successfully secured. Congratulations to all members!</i>"
+        )
+        self.post_telegram(tg_text)
+
+    def notify_vip_touch_warning(
+        self,
+        ticket: int,
+        symbol: str,
+        direction: str,
+        target_type: str,  # "SL" or "TP"
+        current_price: float,
+        target_price: float,
+        dist_pts: float,
+    ):
+        """Dispatches real-time proximity warning when price touches or nears SL/TP zone."""
+        clean_sym = symbol.replace(".x", "").replace("m", "")
+        if target_type.upper() == "TP":
+            header = "🎯 <b>VIP ALERT | TESTING TAKE-PROFIT ZONE</b>"
+            badge = "🚀 Approaching TP Target"
+            note = "Price is testing take-profit level. Prepare for target fill."
+        else:
+            header = "⚠️ <b>VIP ALERT | TESTING STOP-LOSS ZONE</b>"
+            badge = "🛡️ Testing SL Support/Resistance"
+            note = "Price is currently testing stop-loss zone."
+
+        tg_text = (
+            f"{header}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>Asset:</b> <code>#{clean_sym}</code> ({direction.upper()}) | Ticket <code>#{ticket}</code>\n"
+            f"📊 <b>Status:</b> <b>{badge}</b>\n"
+            f"📍 <b>Current Price:</b> <code>{current_price:,.2f}</code>\n"
+            f"🎯 <b>Target {target_type.upper()}:</b> <code>{target_price:,.2f}</code> (Distance: <code>{dist_pts:,.2f} pts</code>)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⚡ <i>{note}</i>"
         )
         self.post_telegram(tg_text)
 
